@@ -106,9 +106,15 @@ FriendlyChat.prototype.saveMessage = function(e) {
 
 // Sets the URL of the given img element with the URL of the image stored in Cloud Storage.
 FriendlyChat.prototype.setImageUrl = function(imageUri, imgElement) {
-  imgElement.src = imageUri;
-
-  // TODO(DEVELOPER): If image is on Cloud Storage, fetch image URL and set img element's src.
+  // If the iamge is a Cloud Starge URI we fetch the URL.
+  if (imageUri.startsWith("gs://")) {
+    imgElement.src = FriendlyChat.LOADING_IMAGE_URL;
+    this.storage.refFromURL(imageUri).getMetadata().then(function(metadata) {
+      imgElement.src = metadata.downloadURLs[0];
+    });
+  } else {
+    imgElement.src = imageUri;
+  }
 };
 
 // Saves a new message containing an image URI in Firebase.
@@ -126,14 +132,34 @@ FriendlyChat.prototype.saveImageMessage = function(event) {
       message: 'You can only share images',
       timeout: 2000
     };
+
     this.signInSnackbar.MaterialSnackbar.showSnackbar(data);
     return;
   }
   // Check if the user is signed-in
   if (this.checkSignedInWithMessage()) {
+    // We add a message with a loading icon that will get updated with the shared image.
+    var currentUser = this.auth.currentUser;
 
-    // TODO(DEVELOPER): Upload image to Firebase storage and add message.
-
+    this.messagesRef.push({
+      name: currentUser.displayName,
+      imageUrl: FriendlyChat.LOADING_IMAGE_URL,
+      photoUrl: currentUser.photoURL || "/images/profile_placeholder.png"
+    }).then(function(data) {
+      // Uplaod the image to Cloud Storage.
+      var filePath = currentUser.uid + "/" + data.key + "/" + file.name;
+      
+      return this.storage.ref(filePath).put(file).then(function(snapshot) {
+        // Get the file's Storage URI and update teh chat message placeholder.
+        var fullPath = snapshot.metadata.fullPath;
+        
+        return data.update({
+          imageUrl: this.storage.ref(fullPath).toString()
+        });
+      }.bind(this));
+    }.bind(this)).catch(function(error) {
+      console.error("There was an error uploading a file to Cloud Storage:", error);
+    });
   }
 };
 
