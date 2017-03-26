@@ -1,5 +1,6 @@
 {
   "projects": {
-    "friendlychat-dev": "friendlychat-d43f5"
+    "friendlychat-dev": "friendlychat-d43f5",
+    "development": "friendlychat-d43f5"
   }
 }

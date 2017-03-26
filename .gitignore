@@ -6,3 +6,5 @@ Podfile.lock
 xcuserdata/
 *.xcworkspace/
 GoogleService-Info.plist
+firebase-debug.log
+npm-debug.log
